@@ -7,8 +7,13 @@ import { RequestMetricsCompeny } from './dto/RequestMetricsCompeny';
 export class CompanyMetricsController {
     constructor(private readonly companyService: CompanyMetricsService) {}
     
-  @Get('overview/:symbol')
+  @Get('/overview/:symbol')
   async getOverViewMetrics(@Param() requestMetricsCompeny: RequestMetricsCompeny): Promise<FinancialData[]> {
-    return await this.companyService.getOverViewMereics(requestMetricsCompeny.symbol);
+    return await this.companyService.getOverViewMeteics(requestMetricsCompeny.symbol);
+  }
+
+  @Get('/valuation/:symbol')
+  async getValuationMetrics(@Param() requestMetricsCompeny: RequestMetricsCompeny): Promise<FinancialData[]> {
+    return await this.companyService.getValuationMetrics(requestMetricsCompeny.symbol);
   }
 }

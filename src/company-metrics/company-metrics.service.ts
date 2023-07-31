@@ -66,34 +66,33 @@ type TikerOverViewRespone = {
     };
   };
   
+  const adaptValue = (value: number | string | null | undefined, precision?: number, suffix?: string): string => {
+    const fallbackValue = '--';
+
+    if (value === null || value === undefined) {
+        return fallbackValue;
+    }
+    if (typeof value === 'number') {
+        const magnitude = Math.abs(value);
+        if (magnitude >= 1e12) {
+        return `${(value / 1e12).toFixed(precision)}T`;
+        }
+        if (magnitude >= 1e9) {
+        return `${(value / 1e9).toFixed(precision)}B`;
+        }
+        if (magnitude >= 1e6) {
+        return `${(value / 1e6).toFixed(precision)}M`;
+        }
+        return precision !== undefined ? value.toFixed(precision) : value.toString();
+    }
+    return value;
+    };
 
 @Injectable()
 export class CompanyMetricsService {
-    async getOverViewMereics(symbol: string): Promise<FinancialData[]> {
+    async getOverViewMeteics(symbol: string): Promise<FinancialData[]> {
         const url = `https://api.stockunlock.com/stockDetails/getTickerOverview?ticker=${symbol}`
         const tikerOverViewRespone : TikerOverViewRespone = (await axios.get<TikerOverViewRespone>(url)).data;
-        
-        const fallbackValue = '--';
-
-        const adaptValue = (value: number | string | null | undefined, precision?: number, suffix?: string): string => {
-        if (value === null || value === undefined) {
-            return fallbackValue;
-        }
-        if (typeof value === 'number') {
-            const magnitude = Math.abs(value);
-            if (magnitude >= 1e12) {
-            return `${(value / 1e12).toFixed(precision)}T`;
-            }
-            if (magnitude >= 1e9) {
-            return `${(value / 1e9).toFixed(precision)}B`;
-            }
-            if (magnitude >= 1e6) {
-            return `${(value / 1e6).toFixed(precision)}M`;
-            }
-            return precision !== undefined ? value.toFixed(precision) : value.toString();
-        }
-        return value;
-        };
 
         const adaptedData = [
         { title: "Market Cap", value: adaptValue(tikerOverViewRespone.shareStatsData.marketCapNew || tikerOverViewRespone.shareStatsData.marketCap, 2) },
@@ -116,4 +115,18 @@ export class CompanyMetricsService {
 
         return adaptedData;
       }
+
+    async getValuationMetrics(symbol: string): Promise<FinancialData[]> {
+      const url = `https://api.stockunlock.com/stockDetails/getTickerOverview?ticker=${symbol}`
+      const tikerOverViewRespone : TikerOverViewRespone = (await axios.get<TikerOverViewRespone>(url)).data;
+      
+      const adaptedData = [
+        { title: "P/E (TTM)", value: adaptValue(tikerOverViewRespone.priceRatios.priceEarningsTtm, 2) },
+        { title: "Forward P/E", value: adaptValue(tikerOverViewRespone.priceRatios.forwardPe, 2) },
+        { title: "P/FCF (TTM)", value: adaptValue(tikerOverViewRespone.priceRatios.priceFreeCashflowTtm, 2) },
+        { title: "P/S (TTM)", value: adaptValue(tikerOverViewRespone.priceRatios.priceSalesTtm, 2) },
+        ];
+        
+        return adaptedData;
+    }
 }
