@@ -117,16 +117,21 @@ export class CompanyMetricsService {
       }
 
     async getValuationMetrics(symbol: string): Promise<FinancialData[]> {
-      const url = `https://api.stockunlock.com/stockDetails/getTickerOverview?ticker=${symbol}`
+      const url = `https://api.stockunlock.com/stockDetails/getTickerOverview?ticker=${symbol}`;
+      const urlForPeg = `https://api.nasdaq.com/api/analyst/${symbol}/peg-ratio`;
       const tikerOverViewRespone : TikerOverViewRespone = (await axios.get<TikerOverViewRespone>(url)).data;
+      const PegRespone  = (await axios.get<TikerOverViewRespone>(urlForPeg)).data;
+
+      console.log();
       
       const adaptedData = [
         { title: "P/E (TTM)", value: adaptValue(tikerOverViewRespone.priceRatios.priceEarningsTtm, 2) },
         { title: "Forward P/E", value: adaptValue(tikerOverViewRespone.priceRatios.forwardPe, 2) },
         { title: "P/FCF (TTM)", value: adaptValue(tikerOverViewRespone.priceRatios.priceFreeCashflowTtm, 2) },
+        { title: "Forward PEG", value: `${PegRespone["data"]["pegr"]["pegValue"]}` },
         { title: "P/S (TTM)", value: adaptValue(tikerOverViewRespone.priceRatios.priceSalesTtm, 2) },
         ];
-        
+
         return adaptedData;
     }
 }
