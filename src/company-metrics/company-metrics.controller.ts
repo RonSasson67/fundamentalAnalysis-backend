@@ -1,6 +1,6 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { CompanyMetricsService } from './company-metrics.service';
-import { RequestMetricsCompeny } from './dto/RequestMetricsCompeny';
+import { RequestMetricsCompeny } from '../dto/RequestMetricsCompeny';
 import { FinancialData } from './interface/FinancialData.interface';
 
 @Controller('metrics')
