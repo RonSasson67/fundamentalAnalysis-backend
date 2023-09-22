@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DcfValuationResponse, HistoricalFinancial } from './interface/DcfValuation/DcfValuationResponse';
 import { MultipleValuationResponse } from './interface/MultipleValuation/MultipleValuationResponse';
 
-const FINNHUB_TOKEN = `chj8e69r01qh5480dvg0chj8e69r01qh5480dvgg`;
+const FINNHUB_TOKEN = `ck6qs5pr01qmp9pd4l90ck6qs5pr01qmp9pd4l9g`;
 
 @Injectable()
 export class CompanyValuationService {
