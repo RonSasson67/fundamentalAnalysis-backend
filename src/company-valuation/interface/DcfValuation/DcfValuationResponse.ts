@@ -7,7 +7,7 @@ export type DcfValuationResponse = {
 };
 
 export type HistoricalFinancial = {
-  years: number;
+  year: number;
   netIncome: number;
   revenue: number;
   cashFromOperations: number;
