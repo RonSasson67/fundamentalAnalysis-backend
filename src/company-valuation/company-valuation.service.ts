@@ -18,6 +18,13 @@ export class CompanyValuationService {
     const MetricsPromise = fetch(urlMetrics);
 
     // Wait for both promises to resolve
+    try {
+      await Promise.all([StockPricePromise, MetricsPromise]);
+    } catch (error) {
+      console.log(error);
+      return null;
+    }
+
     const StockPriceRespone = await (await StockPricePromise).json();
     const MetricsRespone = await (await MetricsPromise).json();
 
@@ -50,6 +57,12 @@ export class CompanyValuationService {
     const FinancialsReportPromise = fetch(urlFinancialsReport);
 
     // Wait for all promises to resolve
+    try {
+      await Promise.all([StockPricePromise, MetricsPromise, FinancialsReportPromise]);
+    } catch (error) {
+      console.log(error);
+      return null;
+    }
     const StockPriceRespone = await (await StockPricePromise).json();
     const MetricsRespone = await (await MetricsPromise).json();
     const FinancialsReportRespone = await (await FinancialsReportPromise).json();
@@ -57,7 +70,7 @@ export class CompanyValuationService {
     // build the response
     const peRecomended = calculateAverageMetric(MetricsRespone, 'peTTM', 5);
     const pfcfRecommended = calculateAverageMetric(MetricsRespone, 'pfcfTTM', 5);
-    const historicalFinancials = GetMetricsFromFinancilasReport(FinancialsReportRespone, 5);
+    const historicalFinancials = GetMetricsFromFinancilasReport(FinancialsReportRespone, 5).slice(0).reverse();
     const growthRateInPrecent = await growRatePromise;
 
     const dcfValuationResponse: DcfValuationResponse = {
@@ -96,11 +109,11 @@ const GetMetricsFromFinancilasReport = (FinancialsReportRespone: any, yearsBack:
     const freeCashFlow = cashFromOperationsItem.value - CapitalExpended.value;
 
     const historicalFinancial: HistoricalFinancial = {
-      years: item.year,
-      netIncome: netIncomeItem ? netIncomeItem.value : 0,
-      revenue: revenueItem ? revenueItem.value : 0,
-      cashFromOperations: cashFromOperationsItem ? cashFromOperationsItem.value : 0,
-      freeCashFlow: freeCashFlow,
+      year: item.year,
+      netIncome: netIncomeItem ? netIncomeItem.value / 1000000 : 0,
+      revenue: revenueItem ? revenueItem.value / 1000000 : 0,
+      cashFromOperations: cashFromOperationsItem ? cashFromOperationsItem.value / 1000000 : 0,
+      freeCashFlow: freeCashFlow / 1000000,
     };
     return historicalFinancial;
   });
@@ -109,6 +122,25 @@ const GetMetricsFromFinancilasReport = (FinancialsReportRespone: any, yearsBack:
 const GetGrowRateInPrecent = async (symbol: string): Promise<number> => {
   const yahoourl = `https://finance.yahoo.com/quote/${symbol}/analysis`;
 
+  for (let index = 0; index < 5; index++) {
+    try {
+      const yahooResponse = await fetch(yahoourl);
+      const yahooData = await yahooResponse.text();
+
+      const textToFinde = `<span>Next 5 Years (per annum)</span></td><td class="Ta(end) Py(10px)">`;
+      const indexOfGrowEstamite = yahooData.indexOf(textToFinde);
+      let GrowthRateInPrecent = yahooData.substring(
+        indexOfGrowEstamite + textToFinde.length,
+        indexOfGrowEstamite + textToFinde.length + 10,
+      );
+      GrowthRateInPrecent = GrowthRateInPrecent.substring(0, GrowthRateInPrecent.indexOf('%'));
+
+      return parseFloat(GrowthRateInPrecent);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  return 0;
   const yahooResponse = await fetch(yahoourl);
   const yahooData = await yahooResponse.text();
 
