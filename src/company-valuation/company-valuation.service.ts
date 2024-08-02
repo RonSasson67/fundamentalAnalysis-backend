@@ -3,6 +3,7 @@ import { DcfValuationResponse, HistoricalFinancial } from './interface/DcfValuat
 import { MultipleValuationResponse } from './interface/MultipleValuation/MultipleValuationResponse';
 
 const FINNHUB_TOKEN = `ck6qs5pr01qmp9pd4l90ck6qs5pr01qmp9pd4l9g`;
+const ALPHA_TOKEN = 'EWPHM6EUSRM2H5VT';
 
 @Injectable()
 export class CompanyValuationService {
@@ -47,6 +48,7 @@ export class CompanyValuationService {
     const urlStockPrice = `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_TOKEN}`;
     const urlMetrics = `https://finnhub.io/api/v1/stock/metric?symbol=${symbol}&metric=all&token=${FINNHUB_TOKEN}`;
     const urlFinancialsReport = `https://finnhub.io/api/v1/stock/financials-reported?symbol=${symbol}&token=${FINNHUB_TOKEN}`;
+    const urlStockPricesAllHistory = `https://www.alphavantage.co/query?function=TIME_SERIES_WEEKLY_ADJUSTED&symbol=${symbol}&apikey=${ALPHA_TOKEN}`;
 
     // Get the grow rate in precent first because it takes the longest time
     const growRatePromise = GetGrowRateInPrecent(symbol);
@@ -55,10 +57,11 @@ export class CompanyValuationService {
     const StockPricePromise = fetch(urlStockPrice);
     const MetricsPromise = fetch(urlMetrics);
     const FinancialsReportPromise = fetch(urlFinancialsReport);
+    const StockPricesAllHistoryPromise = fetch(urlStockPricesAllHistory);
 
     // Wait for all promises to resolve
     try {
-      await Promise.all([StockPricePromise, MetricsPromise, FinancialsReportPromise]);
+      await Promise.all([StockPricePromise, MetricsPromise, FinancialsReportPromise, StockPricesAllHistoryPromise]);
     } catch (error) {
       console.log(error);
       return null;
@@ -66,10 +69,19 @@ export class CompanyValuationService {
     const StockPriceRespone = await (await StockPricePromise).json();
     const MetricsRespone = await (await MetricsPromise).json();
     const FinancialsReportRespone = await (await FinancialsReportPromise).json();
+    const StockPricesAllHistoryRespone = await (await StockPricesAllHistoryPromise).json();
+
+    const stockPricesAllHistory = Object.entries(StockPricesAllHistoryRespone['Weekly Adjusted Time Series'])
+      .map(([date, values]) => ({
+        date: new Date(date).getTime(), // timestamp
+        close: parseFloat(values['4. close']),
+      }))
+      .reverse();
 
     // build the response
     const peRecomended = calculateAverageMetric(MetricsRespone, 'peTTM', 5);
     const pfcfRecommended = calculateAverageMetric(MetricsRespone, 'pfcfTTM', 5);
+
     const historicalFinancials = GetMetricsFromFinancilasReport(FinancialsReportRespone, 5).slice(0).reverse();
     const growthRateInPrecent = await growRatePromise;
 
@@ -85,6 +97,7 @@ export class CompanyValuationService {
         terminalGrowthRate: 2,
       },
       historicalFinancials: historicalFinancials,
+      stockPricesAllHistory: stockPricesAllHistory,
     };
 
     return dcfValuationResponse;
@@ -122,25 +135,6 @@ const GetMetricsFromFinancilasReport = (FinancialsReportRespone: any, yearsBack:
 const GetGrowRateInPrecent = async (symbol: string): Promise<number> => {
   const yahoourl = `https://finance.yahoo.com/quote/${symbol}/analysis`;
 
-  for (let index = 0; index < 5; index++) {
-    try {
-      const yahooResponse = await fetch(yahoourl);
-      const yahooData = await yahooResponse.text();
-
-      const textToFinde = `<span>Next 5 Years (per annum)</span></td><td class="Ta(end) Py(10px)">`;
-      const indexOfGrowEstamite = yahooData.indexOf(textToFinde);
-      let GrowthRateInPrecent = yahooData.substring(
-        indexOfGrowEstamite + textToFinde.length,
-        indexOfGrowEstamite + textToFinde.length + 10,
-      );
-      GrowthRateInPrecent = GrowthRateInPrecent.substring(0, GrowthRateInPrecent.indexOf('%'));
-
-      return parseFloat(GrowthRateInPrecent);
-    } catch (error) {
-      console.log(error);
-    }
-  }
-  return 0;
   const yahooResponse = await fetch(yahoourl);
   const yahooData = await yahooResponse.text();
 
@@ -151,8 +145,9 @@ const GetGrowRateInPrecent = async (symbol: string): Promise<number> => {
     indexOfGrowEstamite + textToFinde.length + 10,
   );
   GrowthRateInPrecent = GrowthRateInPrecent.substring(0, GrowthRateInPrecent.indexOf('%'));
+  const growthRate = parseFloat(GrowthRateInPrecent);
 
-  return parseFloat(GrowthRateInPrecent);
+  return isNaN(growthRate) ? 8 : growthRate;
 };
 
 const calculateAverageMetric = (data: any, metric: string, numberOfYearsBack: number) => {
