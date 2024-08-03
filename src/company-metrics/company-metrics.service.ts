@@ -112,7 +112,6 @@ export class CompanyMetricsService {
     const functionApi = 'BALANCE_SHEET';
     const url = `https://www.alphavantage.co/query?function=${functionApi}&symbol=${symbol}&apikey=${alphaApi}`;
     const balanceSheetRespone = (await axios.get(url)).data;
-    console.log(balanceSheetRespone);
     const currentRatio =
       balanceSheetRespone['annualReports'][0]['totalCurrentAssets'] /
       balanceSheetRespone['annualReports'][0]['totalCurrentLiabilities'];
