@@ -4,10 +4,11 @@ export type DcfValuationResponse = {
   MarketCap: number;
   recomandedMetrics: RecomandedMetrics;
   historicalFinancials: HistoricalFinancial[];
+  stockPricesAllHistory: stockPrice[];
 };
 
 export type HistoricalFinancial = {
-  years: number;
+  year: number;
   netIncome: number;
   revenue: number;
   cashFromOperations: number;
@@ -20,4 +21,9 @@ export type RecomandedMetrics = {
   discountRate: number;
   growthRate: number;
   terminalGrowthRate: number;
+};
+
+export type stockPrice = {
+  date: number;
+  close: number;
 };
